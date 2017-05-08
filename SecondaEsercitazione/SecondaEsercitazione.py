@@ -1,5 +1,6 @@
 import math
 import random
+import numpy as np
 
 
 def fast_exp_alg(a, n, m):
@@ -41,22 +42,67 @@ def rabin_test(x, n):
     return (xr[0] != 1) & all(xi % n != n - 1 for xi in xr[0:-1])
 
 
-def generate_random_prime(limit):
+def generate_random_prime(limit, accuracy):
     random_number = random.randint(1, limit)
-    while random_number % 2 == 0:
-        random_number = random.randint(1, limit)
-    n_baton = int(math.floor(random_number / 4)) * 3
-    while any(rabin_test(i, random_number) is True for i in range(2, n_baton)):
+    while random_number % 2 == 0 or any(rabin_test(x, random_number)
+                                        is True for x in range(2, int(random_number / accuracy))):
         random_number = random.randint(1, limit)
         while random_number % 2 == 0:
             random_number = random.randint(1, limit)
-        print(random_number)
-        n_baton = math.floor(random_number / 4) * 3
     return random_number
 
+
+def rsa_encrypt(m, kp):
+    return fast_exp_alg(m, kp[0], kp[1])
+
+
+def rsa_decrypt(c, km):
+    return fast_exp_alg(c, km[0], km[1])
+
+
+def generate_rsa_key(p, q):
+    n = p * q
+    phi = (p - 1) * (q - 1)
+    d = 7  # generare casualmente relativamente primo con phi
+    e = extended_euclidean_algorithm(d, phi)
+    kp = (e[1], n)
+    km = (d, n)
+    return kp, km
+
+
+def generate_rsa_crt_key(p, q):
+    n = p * q
+    phi = (p - 1) * (q - 1)
+    d = 7  # generare casualmente relativamente primo con phi
+    e = extended_euclidean_algorithm(d, phi)
+    dp = d % (p - 1)
+    if dp < 0:
+        dp = dp + p - 1
+    dq = d % (q - 1)
+    if dq < 0:
+        dq = dq + q - 1
+    q_inv = extended_euclidean_algorithm(q, p)[1]
+    kp = (e[1], n)
+    km = (p, q, dp, dq, q_inv)
+    return kp, km
+
+
+def rsa_decrypt_crt(c, km):
+    m1 = fast_exp_alg(c, km[2], km[0])
+    m2 = fast_exp_alg(c, km[3], km[1])
+    h = km[4] * (m1 - m2) % km[0]
+    return m2 + h * km[1]
 
 if __name__ == '__main__':
     # print(extended_euclidean_algorithm(17, 60))
     # print(rabin_test(2, 457))
     # print(fast_exp_alg(3, 11, 10))
-    print(generate_random_prime(500))
+    # print([generate_random_prime(10**100, 4) for i in range(0, 1)])
+    # print(rabin_test(2, 3))
+    public_key, private_key = generate_rsa_key(3, 11)
+    print(rsa_encrypt(8, public_key))
+    print(rsa_decrypt(rsa_encrypt(8, public_key), private_key))
+    public_key, private_key = generate_rsa_crt_key(3, 11)
+    encr = rsa_encrypt(8, public_key)
+    print(encr)
+    print(rsa_decrypt_crt(encr, private_key))
