@@ -21,7 +21,7 @@ def extended_euclidean_algorithm(a, b):
     qm1 = 1
     t = 0
     while rm1 != 0:
-        q = math.floor(rm / rm1)
+        q = rm // rm1
         temp = t
         t = qm1
         qm1 = temp - q * qm1
@@ -44,11 +44,11 @@ def rabin_test(x, n):
     return (xr[0] != 1) and all(xi % n != n - 1 for xi in xr[0:-1])
 
 
-def generate_random_prime(limit, accuracy):
+def generate_random_prime(minimum, limit, accuracy):
     random_number = 0
     condition = True
     while condition:
-        random_number = random.randint(1, limit)
+        random_number = random.randint(minimum, limit)
         if random_number % 2 != 0:
             test_sample = [random.randint(2, limit) for i in range(0, accuracy)]
             condition = any(rabin_test(x, random_number) for x in test_sample)
@@ -66,7 +66,9 @@ def rsa_decrypt(c, km):
 def generate_rsa_key(p, q):
     n = p * q
     phi = (p - 1) * (q - 1)
-    d = 7  # generare casualmente relativamente primo con phi
+    d = generate_random_prime(2, n-1, 5)
+    while extended_euclidean_algorithm(d, phi)[0] != 1:
+        d = generate_random_prime(2, n-1, 16)
     e = extended_euclidean_algorithm(d, phi)
     kp = (e[1], n)
     km = (d, n)
@@ -76,7 +78,9 @@ def generate_rsa_key(p, q):
 def generate_rsa_crt_key(p, q):
     n = p * q
     phi = (p - 1) * (q - 1)
-    d = 7  # generare casualmente relativamente primo con phi
+    d = generate_random_prime(2, n - 1, 5)
+    while d != 1 and extended_euclidean_algorithm(d, phi)[0] != 1:
+        d = generate_random_prime(2, n-1, 5)
     e = extended_euclidean_algorithm(d, phi)
     dp = d % (p - 1)
     if dp < 0:
@@ -87,6 +91,7 @@ def generate_rsa_crt_key(p, q):
     q_inv = extended_euclidean_algorithm(q, p)[1]
     kp = (e[1], n)
     km = (p, q, dp, dq, q_inv)
+
     return kp, km
 
 
@@ -96,15 +101,19 @@ def rsa_decrypt_crt(c, km):
     h = km[4] * (m1 - m2) % km[0]
     return m2 + h * km[1]
 
-
-def decryptionexp(n, d, e):
-    return None
-
-
 def wrapper_prime():
-    generate_random_prime(10 ** 100, 16)
+    generate_random_prime(10 ** 100, (10 ** 101) - 1, 16)
 
 if __name__ == '__main__':
+    kp, km = generate_rsa_crt_key(3, 7)
+    kp1, km1 = generate_rsa_key(3, 7)
+    print(rsa_decrypt_crt(rsa_encrypt(15, kp), km))
+    print(rsa_decrypt(rsa_encrypt(13, kp1), km1))
+
+    #kp, km = generate_rsa_crt_key(7,11)
+    #c = rsa_encrypt(20, kp)
+    #m = rsa_decrypt_crt(c, km)
+    #print(m)
     # print(extended_euclidean_algorithm(17, 60))
     # print(rabin_test(2, 457))
     # print(fast_exp_alg(3, 11, 10))
@@ -117,4 +126,4 @@ if __name__ == '__main__':
     # encr = rsa_encrypt(8, public_key)
     # print(encr)
     # print(rsa_decrypt_crt(encr, private_key))
-    print(timeit.timeit(wrapper_prime, number=1))
+    #print(timeit.timeit(wrapper_prime, number=1))
