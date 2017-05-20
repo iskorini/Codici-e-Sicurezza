@@ -2,10 +2,6 @@ import math
 import random
 import timeit
 
-color = ['\033[0m', '\033[31m', '\033[32m', '\033[33m', '\033[34m', '\033[35m', '\033[36m', '\033[37m',
-         '\033[38m', '\033[39m', '\033[40m']
-
-
 def fast_exp_alg(a, n, m):
     d, c = 1, 0
     bin_n = "{0:b}".format(n)
@@ -21,7 +17,7 @@ def extended_euclidean_algorithm(a, b):
     qm1 = 1
     t = 0
     while rm1 != 0:
-        q = rm // rm1
+        q = math.floor(rm / rm1)
         temp = t
         t = qm1
         qm1 = temp - q * qm1
@@ -30,8 +26,9 @@ def extended_euclidean_algorithm(a, b):
         rm1 = temp - q * rm1
     if t < 0:
         t = t + b
+    if rm>1:
+        t = "ND"
     return rm, t
-
 
 def rabin_test(x, n):
     m, r, xr = n - 1, 0, []
@@ -63,67 +60,36 @@ def rsa_decrypt(c, km):
     return fast_exp_alg(c, km[0], km[1])
 
 
-def generate_rsa_key(p, q):
+def generate_rsa_key(p, q, d):
     n = p * q
     phi = (p - 1) * (q - 1)
-    d = generate_random_prime(2, n-1, 5)
-    while extended_euclidean_algorithm(d, phi)[0] != 1:
-        d = generate_random_prime(2, n-1, 16)
+    if d == 0:
+        d = generate_random_prime(2, n-1, 5)
+        while extended_euclidean_algorithm(d, phi)[0] != 1:
+            d = generate_random_prime(2, n-1, 16)
     e = extended_euclidean_algorithm(d, phi)
     kp = (e[1], n)
     km = (d, n)
     return kp, km
 
 
-def generate_rsa_crt_key(p, q):
+def generate_rsa_crt_key(p, q, d):
     n = p * q
     phi = (p - 1) * (q - 1)
-    d = generate_random_prime(2, n - 1, 5)
-    while d != 1 and extended_euclidean_algorithm(d, phi)[0] != 1:
-        d = generate_random_prime(2, n-1, 5)
-    e = extended_euclidean_algorithm(d, phi)
-    dp = d % (p - 1)
-    if dp < 0:
-        dp = dp + p - 1
-    dq = d % (q - 1)
-    if dq < 0:
-        dq = dq + q - 1
+    if d == 0:
+        d = generate_random_prime(2, n - 1, 5)
+        while d != 1 and extended_euclidean_algorithm(d, phi)[0] != 1:
+            d = generate_random_prime(2, n-1, 5)
     q_inv = extended_euclidean_algorithm(q, p)[1]
+    p_inv = extended_euclidean_algorithm(p, q)[1]
+    e = extended_euclidean_algorithm(d, phi)
     kp = (e[1], n)
-    km = (p, q, dp, dq, q_inv)
-
+    km = (p, q, d, p_inv*p, q_inv*q)
     return kp, km
 
 
 def rsa_decrypt_crt(c, km):
-    m1 = fast_exp_alg(c, km[2], km[0])
-    m2 = fast_exp_alg(c, km[3], km[1])
-    h = km[4] * (m1 - m2) % km[0]
-    return m2 + h * km[1]
+    mp = fast_exp_alg(c, km[2], km[0])
+    mq = fast_exp_alg(c, km[2], km[1])
+    return ((mp * km[4]) + (mq * km[3]))%(km[0]*km[1])
 
-def wrapper_prime():
-    generate_random_prime(10 ** 100, (10 ** 101) - 1, 16)
-
-if __name__ == '__main__':
-    kp, km = generate_rsa_crt_key(3, 7)
-    kp1, km1 = generate_rsa_key(3, 7)
-    print(rsa_decrypt_crt(rsa_encrypt(15, kp), km))
-    print(rsa_decrypt(rsa_encrypt(13, kp1), km1))
-
-    #kp, km = generate_rsa_crt_key(7,11)
-    #c = rsa_encrypt(20, kp)
-    #m = rsa_decrypt_crt(c, km)
-    #print(m)
-    # print(extended_euclidean_algorithm(17, 60))
-    # print(rabin_test(2, 457))
-    # print(fast_exp_alg(3, 11, 10))
-    # print([generate_random_prime(10**100, 4) for i in range(0, 1)])
-    # print(rabin_test(2, 3))
-    # public_key, private_key = generate_rsa_key(3, 11)
-    # print(rsa_encrypt(8, public_key))
-    # print(rsa_decrypt(rsa_encrypt(8, public_key), private_key))
-    # public_key, private_key = generate_rsa_crt_key(3, 11)
-    # encr = rsa_encrypt(8, public_key)
-    # print(encr)
-    # print(rsa_decrypt_crt(encr, private_key))
-    #print(timeit.timeit(wrapper_prime, number=1))
