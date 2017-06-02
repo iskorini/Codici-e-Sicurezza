@@ -9,22 +9,22 @@ english_character_distribution = {'a': 0.08167, 'b': 0.01492, 'c': 0.02782, 'd':
 
 
 def count_character(text):
-    text_no_space = text.lower().replace(" ", "")
     occurences = dict()
     for character in list(map(chr, range(97, 123))):
-        occurences[character] = text_no_space.count(character)
+        occurences[character] = text.count(character)
+    total = sum(occurences.values())
     for character in occurences:
-        occurences[character] /= sum(occurences.values())
+        occurences[character] /= total
     return occurences
 
 
-def kullback_leibler_divergence(freq1, freq2):
+def kullback_leibler_divergence(p, q):
     divergence = 0
-    for letter in freq2:
-        if letter not in freq1:
+    for letter in p:
+        if letter not in q:
             return np.inf
         else:
-            divergence += freq1[letter] * np.log2((freq1[letter] / freq2[letter]))
+            divergence += p[letter] * np.log2((p[letter] / q[letter]))
     return divergence
 
 
@@ -46,16 +46,17 @@ def hypotesis_testing(text):
         random_result_qp.append(abs(kullback_leibler_divergence(shifted_occurences, random_character_distribution)))
     result = [] * 4  # result, divergence, an, bn
     if min(english_result) < min(random_result):
-        result.append("H0")
+        result.append("H0 - Inglese")
         result.append(min(english_result))
         result.append(pow(2, (-26 * min(english_result_qp))))
     else:
-        result.append("H1")
+        result.append("H1 - Casuale")
         result.append(min(random_result))
         result.append(pow(2, (-26 * min(random_result_qp))))
     result.append(pow(2, (-26 * result[1])))
     return result
 
 
+
 if __name__ == '__main__':
-    print(hypotesis_testing(open("Text/engltext1.txt").read()))
+    print(hypotesis_testing(open("Text/engltext2.txt").read()))
