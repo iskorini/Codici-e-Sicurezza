@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 random_character_distribution = dict.fromkeys(list(map(chr, range(97, 123))), 1 / 26)
 english_character_distribution = {'a': 0.08167, 'b': 0.01492, 'c': 0.02782, 'd': 0.04253, 'e': 0.12702, 'f': 0.02228,
@@ -48,15 +49,21 @@ def hypotesis_testing(text):
     if min(english_result) < min(random_result):
         result.append("H0 - Inglese")
         result.append(min(english_result))
-        result.append(pow(2, (-26 * min(english_result_qp))))
+        result.append(pow(2, (-len(occurrences.keys()) * min(english_result_qp))))
     else:
         result.append("H1 - Casuale")
         result.append(min(random_result))
-        result.append(pow(2, (-26 * min(random_result_qp))))
-    result.append(pow(2, (-26 * result[1])))
+        result.append(pow(2, (-len(occurrences.keys()) * min(random_result_qp))))
+    result.append(pow(2, (-len(occurrences.keys()) * result[1])))
     return result
 
 
-
 if __name__ == '__main__':
-    print(hypotesis_testing(open("Text/engltext2.txt").read()))
+    results = []
+    for file in os.listdir("ExerciseText/"):
+        if file.endswith(".txt"):
+            results.append(hypotesis_testing(open(file="ExerciseText/" + file, encoding="utf8").read()))
+    print(len(list(filter(lambda x: "random" in x, os.listdir("ExerciseText/")))))
+    print(len(list(filter(lambda x: "H1" in x[0], results))))
+    print(len(list(filter(lambda x: "random" not in x, os.listdir("ExerciseText/")))))
+    print(len(list(filter(lambda x: "H0" in x[0], results))))
